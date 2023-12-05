@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    tools {
+        maven "maven"
+    }
+    stages {
+        stage('Build Maven') {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/elbabili/spring-stock-mvc']]])
+                bat 'mvn clean install'
+            }
+        }
+
+        stage('Build docker image'){
+            steps {
+                script {
+                    bat 'docker build -t mohamedelbab/devops-spring-stock .'
+                }
+            }
+        }
+
+        stage('push docker image to dockerhub'){
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'docker-hp', variable: 'docker-hub-pwd')]) {
+                        bat 'docker login -u mohamedelbab -p %docker-hub-pwd%'
+                    }
+                    bat 'docker push mohamedelbab/devops-spring-stock'
+                }
+            }
+        }
+    }
+}
